@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: workspace-client
+  annotations:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v1
+      kind:  Mapping
+      name:  workspace_client_mapping
+      prefix: /workspace/
+      service: workspace-client:8080
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    name: http
+  selector:
+    app: workspace-client
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workspace-client
+spec:
+  selector:
+    matchLabels:
+      app: workspace-client
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 25%
+  template:
+    metadata:
+      labels:
+        app: workspace-client
+        version: '1'
+    spec:
+      containers:
+      - name: workspace-client
+        image: jasonblanchard/jawn-workspace-client:1
+        env:
+          - name: 'PORT'
+            value: '8080'
+          - name: 'MONGO_HOST'
+            value: 'mongo'
+          - name: 'DB_NAME'
+            value: 'jawn'
+          - name: 'LOG_LEVEL'
+            value: 'DEBUG'
+          - name: 'APP_BASE_PATH'
+            value: '/workspace'
+          - name: 'JWT_SECRET'
+            valueFrom:
+              secretKeyRef:
+                name: app-secrets
+                key: jwtSecret
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          httpGet:
+             path: /health
+             port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
