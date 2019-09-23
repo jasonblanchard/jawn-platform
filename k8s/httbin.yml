@@ -11,6 +11,7 @@ metadata:
       name:  httpbin_mapping
       prefix: /httpbin/
       service: httpbin.org:80
+      bypass_auth: true
       host_rewrite: httpbin.org
 spec:
   ports:
